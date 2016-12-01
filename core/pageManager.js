@@ -268,7 +268,7 @@
 			                try{
 			                	template = JSON.parse(allText);
 			                }catch(e){
-			                	throw new error("Inavlid Json file received");
+			                	throw new Error("Inavlid Json file received");
 			                }finally{
 			                	if(template){
 			                		(CB || function(){})(template);

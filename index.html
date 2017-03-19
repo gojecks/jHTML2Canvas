@@ -179,7 +179,7 @@ function intialize(builder){
 }
 
 
-page.loadTemplate('test/templates/optimumGold.json',intialize);
+//page.loadTemplate('test/templates/optimumGold.json',intialize);
 
 
 /*create PDF*/
@@ -222,7 +222,22 @@ page.loadTemplate('test/templates/optimumGold.json',intialize);
 
     //doc.drawRect(140, 140, 10, 10, 'solid');
 
-    window.open(doc.output('datauri',{}))
+   // window.open(doc.output('datauri',{}))
+
+
+   // test canvas drawing
+  var drawingBoard = new jHTML2Canvas().drawing(null,document.getElementById("page_drop"));
+  	drawingBoard.addStyle({border:"1px solid"});
+  	drawingBoard.init(function(){
+  		var interaction = drawingBoard.interact();
+  			interaction.ajax.post.url = 'http://localhost/events/index.php';
+  			interaction.ajax.get.url = 'http://localhost/events';
+  			interaction.connect();
+  			interaction.$on('interaction.stack.received',function(stacks){
+  				console.log(stacks);
+  			})
+  	});
+
 
 </script>
 

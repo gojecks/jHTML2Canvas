@@ -204,6 +204,57 @@ function jHTML2Canvas(pages){
 		});
 	};
 
+	function http(options){
+		var promise = new jPromise();
+
+		if(typeof options ==="object"){
+			var rawFile = new XMLHttpRequest(),
+				data,
+				self = this;
+			    rawFile.open(options.method, options.url, options.async || true);
+
+			    rawFile.onreadystatechange = function ()
+			    {
+			        if(rawFile.readyState === 4)
+			        {
+			            if(rawFile.status === 200 || rawFile.status == 0)
+			            {
+			            	var contentType = rawFile.getResponseHeader('content-type');
+			            	if (/json/.test(options.dataType || contentType))
+					        {
+					          data = JSON.parse(rawFile.responseText);
+					        } else if (/xml/.test(options.dataType || contentType)) 
+					        {
+					          data = parseXML(rawFile.responseText);
+					        } else
+					        {
+					            data = rawFile.responseText;
+					        }
+
+					        // trigger success
+					        promise.resolve(data);
+			            }else{
+
+			            	// trigger error
+			            	promise.reject();
+			            }
+			        }
+			    }
+
+			  switch(options.method.toLowerCase()){
+			  	case('post'):
+			  		if(options.data && typeof options.data === "object"){
+			  			options.data = JSON.stringify(options.data);
+			  		}
+			  	break;
+			  }
+			 //send the request
+			 rawFile.send(options.data);
+		}
+
+		return promise;
+	};
+
 
 	/*Helper Function */
 	jHTML2Canvas.prototype.helpers = {
@@ -214,7 +265,9 @@ function jHTML2Canvas(pages){
 		transverseDom : transverseDom,
 		is : eleIs,
 		promise : jPromise,
-		forEach : foreach
+		forEach : foreach,
+		http: http,
+		noop: function(){}
 	};
 
 	/*jPromise*/
@@ -223,12 +276,22 @@ function jHTML2Canvas(pages){
 		this.queue = [];
 		this._done = [];
 		this._fail = [];
+		this.$$state = {
+			pending: true,
+			value:null,
+			resolved:null
+		};
 	}
 
 	jPromise.prototype = {
 		then : function(success,error){
 			this._done.push(success);
 			this._fail.push(error);
+			// check if resolved
+			if(!this.$$state.pending){
+				this[this.$$state.resolved].call(this,this.$$state.value);
+			}
+
 			return this;
 		},
 		catch : function(err){
@@ -250,6 +313,10 @@ function jHTML2Canvas(pages){
 				var fn = this._done.shift();
 				fn.apply(fn,arguments);
 			}
+
+			this.$$state.pending = false;
+			this.$$state.resolved = 'resolve';
+			this.$$state.value = arguments;
 		},
 		reject : function(){
 			var len = this._fail.length;
@@ -257,6 +324,10 @@ function jHTML2Canvas(pages){
 				var fn = this._fail.shift();
 				fn.apply(fn,arguments);
 			}
+
+			this.$$state.pending = false;
+			this.$$state.resolved = 'reject';
+			this.$$state.value = arguments;
 		}
 	};
 
@@ -455,6 +526,11 @@ function jHTML2Canvas(pages){
 	/*page Manager*/
 	/*Create Multiple Pages using this Method*/
 	jHTML2Canvas.prototype.pageManager = pageManager;
+
+	/*
+		Draw on canvas
+	*/
+	jHTML2Canvas.prototype.drawing = canvasDrawing;
 
 	jHTML2Canvas.prototype.convertSVG2Canvas = function(svg,callback){
 		if(!svg){
